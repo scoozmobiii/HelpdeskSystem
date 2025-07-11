@@ -20,7 +20,7 @@
     <div v-else class="article-list">
       <div v-for="article in articles" :key="article.id" class="article-item">
         <h2>{{ article.title }}</h2>
-        <p>{{ article.snippet }}...</p>
+        <p v-html="article.snippet + '...'"></p>
         <small>Last updated: {{ new Date(article.updated_at).toLocaleString() }}</small>
         <router-link :to="`/kb/${article.id}`" class="read-more">Read More</router-link>
       </div>
