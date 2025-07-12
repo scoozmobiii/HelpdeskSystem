@@ -9,6 +9,7 @@ import UserManagement from '../views/UserManagement.vue'
 import KnowledgeBase from '../views/KnowledgeBase.vue'
 import ArticleDetail from '../views/ArticleDetail.vue';
 import ArticleEditor from '../views/ArticleEditor.vue';
+import AdminDashboard from '../views/AdminDashboard.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -75,6 +76,12 @@ const router = createRouter({
   name: 'kb-edit',
   component: ArticleEditor,
   meta: { requiresAuth: true, roles: ['staff', 'admin'] }
+},
+{
+  path: '/admin/dashboard',
+  name: 'admin-dashboard',
+  component: AdminDashboard,
+  meta: { requiresAuth: true, roles: ['admin'] } 
 },
   ],
 })

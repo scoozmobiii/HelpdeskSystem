@@ -4,6 +4,7 @@
       <router-link to="/">Home</router-link> |
       <router-link to="/kb">Knowledge Base</router-link> |
       <router-link v-if="authStore.user?.role === 'admin'" to="/admin/users">User Management</router-link>
+      <RouterLink v-if="authStore.user?.role === 'admin'" to="/admin/dashboard">Reporting</RouterLink>
     </nav>
     <RouterView />
   </div>
