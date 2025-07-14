@@ -126,7 +126,7 @@ router.put('/me/password', auth, async (req, res) => {
 
 router.get('/staff', [auth, checkRole(['staff', 'admin'])], async (req, res) => {
     try {
-        const [staffMembers] = await db.query("SELECT id, name FROM users WHERE role IN ('staff', 'admin')");
+        const [staffMembers] = await db.query("SELECT id, name FROM users WHERE role IN ('staff')");
         res.json(staffMembers);
     } catch (err) {
         console.error(err.message);

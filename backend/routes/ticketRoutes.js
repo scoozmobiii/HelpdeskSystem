@@ -81,7 +81,7 @@ router.post('/', auth, async (req, res) => {
   }
 
   try {
-    const newTicket = { title, description, priority, creator_id, category_id: 1 }; // Default category to 1
+    const newTicket = { title, description, priority, creator_id};
     const [result] = await db.query('INSERT INTO tickets SET ?', newTicket);
     res.status(201).json({ id: result.insertId, ...newTicket });
   } catch (err) {
@@ -90,14 +90,12 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-router.put('/:id/assign', [auth, checkRole(['staff', 'admin'])], async (req, res) => {
+router.put('/:id/assign', [auth, checkRole(['admin'])], async (req, res) => {
   const { assigneeId } = req.body;
   const ticketId = req.params.id;
-
   if (!assigneeId) {
     return res.status(400).json({ message: 'Assignee ID is required' });
   }
-
   try {
     const fieldsToUpdate = {
       assignee_id: assigneeId,
@@ -112,6 +110,34 @@ router.put('/:id/assign', [auth, checkRole(['staff', 'admin'])], async (req, res
     console.error(err.message);
     res.status(500).send('Server Error');
   }
+});
+
+// @route   POST /api/tickets/:id/start
+// @desc    Staff starts working on a ticket
+router.post('/:id/start', auth, async (req, res) => {
+    const ticketId = req.params.id;
+    const staffId = req.user.id;
+
+    try {
+        // ตรวจสอบก่อนว่าผู้ใช้ที่กดเป็นคนที่ได้รับมอบหมายงานนี้จริงหรือไม่
+        const [tickets] = await db.query('SELECT assignee_id FROM tickets WHERE id = ?', [ticketId]);
+        if (tickets.length === 0) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        
+        // เปรียบเทียบ ID ของผู้ใช้กับ ID ของผู้ที่ได้รับมอบหมาย
+        if (tickets[0].assignee_id !== staffId) {
+            return res.status(403).json({ message: 'Forbidden: You are not assigned to this ticket.' });
+        }
+
+        // อัปเดตสถานะเป็น In Progress
+        await db.query("UPDATE tickets SET status = 'In Progress' WHERE id = ?", [ticketId]);
+        res.json({ message: 'Ticket status updated to In Progress.' });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
 });
 
 router.post('/:id/resolve', [auth, checkRole(['staff', 'admin'])], async (req, res) => {

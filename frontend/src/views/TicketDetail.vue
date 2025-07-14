@@ -45,22 +45,53 @@
         <div class="lg:col-span-1" v-if="authStore.user?.role === 'staff' || authStore.user?.role === 'admin'">
           <div class="bg-white p-6 rounded-lg shadow-md">
             <h3 class="text-lg font-semibold mb-4">Actions</h3>
-            <div v-if="ticket.status === 'New'" class="space-y-2">
-              <label for="assignee" class="text-sm font-medium">Assign to:</label>
-              <select id="assignee" v-model="selectedAssignee" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option :value="null" disabled>Select a staff member</option>
-                <option v-for="staff in staffList" :key="staff.id" :value="staff.id">{{ staff.name }}</option>
-              </select>
-              <button @click="assignTicket" :disabled="!selectedAssignee" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300">Assign</button>
+            
+            <div v-if="authStore.user?.role === 'admin'">
+              <div v-if="ticket.status === 'New'" class="space-y-2">
+                <label for="assignee" class="text-sm font-medium">Assign to:</label>
+                <select id="assignee" v-model="selectedAssignee" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option :value="null" disabled>Select a staff member</option>
+                  <option v-for="staff in staffList" :key="staff.id" :value="staff.id">{{ staff.name }}</option>
+                </select>
+                <button @click="assignTicket" :disabled="!selectedAssignee" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300">Assign</button>
+              </div>
+              <div v-else-if="ticket.status === 'Closed'">
+                <p class="text-sm text-gray-500 text-center">This ticket is closed.</p>
+              </div>
+              <div v-else>
+                <p class="text-sm text-gray-500 text-center">This ticket is being handled by staff.</p>
+              </div>
             </div>
-            <div v-if="['Assigned', 'In Progress'].includes(ticket.status)">
-              <button @click="resolveTicket" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">Mark as Resolved</button>
-            </div>
-            <div v-if="ticket.status === 'Resolved'">
-              <button @click="closeTicket" class="w-full bg-gray-700 text-white py-2 rounded-md hover:bg-gray-800">Close Ticket</button>
-            </div>
-            <div v-if="ticket.status === 'Closed'">
-              <p class="text-sm text-gray-500 text-center">This ticket is closed.</p>
+
+            <div v-if="authStore.user?.role === 'staff'">
+              <div v-if="ticket.status === 'New'">
+                <p class="text-sm text-gray-500 text-center">This ticket has not been assigned yet.</p>
+              </div>
+
+              <div v-if="ticket.status === 'Assigned'">
+                <button v-if="String(authStore.user?.id) === String(ticket.assignee_id)" @click="startProgress" class="w-full bg-cyan-600 text-white py-2 rounded-md hover:bg-cyan-700">
+                  Start Progress
+                </button>
+                <p v-else class="text-sm text-gray-500 text-center">This ticket is assigned to another staff member.</p>
+              </div>
+
+              <div v-if="ticket.status === 'In Progress'">
+                <button v-if="String(authStore.user?.id) === String(ticket.assignee_id)" @click="resolveTicket" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
+                  Mark as Resolved
+                </button>
+                <p v-else class="text-sm text-gray-500 text-center">This ticket is in progress.</p>
+              </div>
+
+              <div v-if="ticket.status === 'Resolved'">
+                 <button v-if="String(authStore.user?.id) === String(ticket.assignee_id)" @click="closeTicket" class="w-full bg-gray-700 text-white py-2 rounded-md hover:bg-gray-800">
+                   Close Ticket
+                 </button>
+                 <p v-else class="text-sm text-gray-500 text-center">This ticket has been resolved.</p>
+              </div>
+              
+              <div v-if="ticket.status === 'Closed'">
+                <p class="text-sm text-gray-500 text-center">This ticket is closed.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -113,7 +144,6 @@ const fetchData = async () => {
   try {
     const ticketResponse = await apiClient.get(`/tickets/${ticketId}`);
     ticket.value = ticketResponse.data;
-
     if (authStore.user?.role === 'staff' || authStore.user?.role === 'admin') {
       const staffResponse = await apiClient.get('/users/staff');
       staffList.value = staffResponse.data;
@@ -167,11 +197,21 @@ const submitComment = async () => {
     alert('Failed to submit comment.');
   }
 };
+const startProgress = async () => {
+  try {
+    await apiClient.post(`/tickets/${ticketId}/start`);
+    alert('You have started working on this ticket!');
+    fetchData();
+  } catch (error) {
+    alert(`Error: ${error.response?.data?.message || 'Could not start progress.'}`);
+  }
+};
 
 const statusClass = (status) => {
   const s = status ? status.toLowerCase() : '';
   if (s === 'new') return 'bg-blue-100 text-blue-800';
-  if (s === 'assigned' || s.includes('progress')) return 'bg-yellow-100 text-yellow-800';
+  if (s === 'assigned') return 'bg-yellow-100 text-yellow-800';
+  if (s.includes('progress')) return 'bg-purple-100 text-purple-800';
   if (s === 'resolved') return 'bg-green-100 text-green-800';
   if (s === 'closed') return 'bg-gray-200 text-gray-800';
   return 'bg-gray-100 text-gray-800';

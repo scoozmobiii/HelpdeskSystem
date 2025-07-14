@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-red-200 flex items-center justify-center p-4">
+  <div class="min-h-screen bg-gradient-to-br from-blue-100 via-green-100 to-purple-200 flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-bold text-gray-900">
@@ -61,7 +61,7 @@
         <div>
           <button 
             type="submit" 
-            class="mt-4 w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform hover:scale-105 transition-transform duration-300"
+            class="mt-4 w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-gradient-to-r from-green-500 to-blue-400 hover:from-green-600 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform hover:scale-105 transition-transform duration-300"
             :disabled="isSubmitting"
           >
             {{ isSubmitting ? 'LOGGING IN...' : 'LOGIN' }}
@@ -73,7 +73,6 @@
 </template>
 
 <script setup>
-// Script ไม่มีการเปลี่ยนแปลง
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
