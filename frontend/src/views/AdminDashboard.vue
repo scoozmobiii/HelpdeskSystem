@@ -1,29 +1,34 @@
 <template>
-  <div class="admin-dashboard">
-    <h1>Admin Dashboard - System Summary</h1>
-    <div v-if="loading">Loading report...</div>
-    <div v-else-if="error">{{ error }}</div>
+  <div class="admin-dashboard container mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">System Report</h1>
+      <p class="mt-1 text-sm text-gray-500">An overview of helpdesk activity.</p>
+    </div>
+
+    <div v-if="loading" class="text-center text-gray-500 py-10">Loading report...</div>
+    <div v-else-if="error" class="text-center text-red-500 py-10">{{ error }}</div>
     <div v-else>
-      <div class="summary-cards">
-        <div class="card">
-          <h2>{{ summary.totalTickets }}</h2>
-          <p>Total Tickets</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <p class="text-sm font-medium text-gray-500">Total Tickets</p>
+          <p class="text-3xl font-bold text-gray-900">{{ summary.totalTickets }}</p>
         </div>
-        <div class="card">
-          <h2>{{ summary.statusCounts?.Resolved || 0 }}</h2>
-          <p>Resolved Tickets</p>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <p class="text-sm font-medium text-gray-500">New</p>
+          <p class="text-3xl font-bold text-blue-600">{{ summary.statusCounts?.New || 0 }}</p>
         </div>
-        <div class="card">
-          <h2>{{ summary.statusCounts?.New || 0 }}</h2>
-          <p>New Tickets</p>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <p class="text-sm font-medium text-gray-500">In Progress</p>
+          <p class="text-3xl font-bold text-yellow-500">{{ summary.statusCounts?.['In Progress'] || 0 }}</p>
         </div>
-        <div class="card">
-          <h2>{{ summary.statusCounts?.['In Progress'] || 0 }}</h2>
-          <p>In Progress</p>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <p class="text-sm font-medium text-gray-500">Resolved</p>
+          <p class="text-3xl font-bold text-green-600">{{ summary.statusCounts?.Resolved || 0 }}</p>
         </div>
       </div>
-      <div class="chart-container">
-        <h3>Tickets Created (Last 7 Days)</h3>
+      
+      <div class="chart-container bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Tickets Created (Last 7 Days)</h3>
         <Line v-if="chartData.labels.length" :data="chartData" :options="chartOptions" />
       </div>
     </div>
@@ -46,14 +51,29 @@ const chartData = computed(() => {
   if (!summary.value.dailyCounts) {
     return { labels: [], datasets: [] };
   }
+  const labels = [];
+  const data = [];
+  // Create a map of dates to counts
+  const countsByDate = new Map(summary.value.dailyCounts.map(d => [new Date(d.date).toLocaleDateString('en-CA'), d.count]));
+  
+  // Create labels for the last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const formattedDate = date.toLocaleDateString('en-CA');
+    labels.push(formattedDate);
+    data.push(countsByDate.get(formattedDate) || 0); // Use count if exists, otherwise 0
+  }
+
   return {
-    labels: summary.value.dailyCounts.map(d => new Date(d.date).toLocaleDateString('en-CA')),
+    labels,
     datasets: [
       {
         label: 'Tickets Created',
-        backgroundColor: '#42b983',
-        borderColor: '#42b983',
-        data: summary.value.dailyCounts.map(d => d.count),
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        tension: 0.1,
+        data,
       },
     ],
   };
@@ -78,10 +98,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.admin-dashboard { max-width: 1200px; margin: 20px auto; padding: 20px; }
-.summary-cards { display: flex; gap: 20px; justify-content: space-around; margin-bottom: 40px; }
-.card { background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; width: 200px; border: 1px solid #dee2e6;}
-.card h2 { margin: 0; font-size: 2.5em; }
-.card p { margin: 5px 0 0; color: #6c757d; }
-.chart-container { position: relative; height: 400px; }
+.chart-container {
+  position: relative;
+  height: 40vh; /* 40% of the viewport height */
+  width: 100%;
+}
 </style>

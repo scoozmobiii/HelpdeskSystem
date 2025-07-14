@@ -10,6 +10,7 @@ import KnowledgeBase from '../views/KnowledgeBase.vue'
 import ArticleDetail from '../views/ArticleDetail.vue';
 import ArticleEditor from '../views/ArticleEditor.vue';
 import AdminDashboard from '../views/AdminDashboard.vue';
+import Profile from '../views/Profile.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -82,6 +83,12 @@ const router = createRouter({
   name: 'admin-dashboard',
   component: AdminDashboard,
   meta: { requiresAuth: true, roles: ['admin'] } 
+},
+{
+  path: '/profile', 
+  name: 'profile',
+  component: Profile,
+  meta: { requiresAuth: true } 
 },
   ],
 })

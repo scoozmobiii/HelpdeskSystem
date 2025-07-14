@@ -1,67 +1,99 @@
 <template>
-  <div v-if="loading">Loading ticket details...</div>
-  <div v-else-if="ticket" class="ticket-detail-container">
-    <div class="header">
-      <h1>Ticket #{{ ticket.id }}: {{ ticket.title }}</h1>
-      <router-link v-if="authStore.user?.role === 'staff' || authStore.user?.role === 'admin'" to="/staff/dashboard">Back to Staff List</router-link>
-      <router-link v-else to="/dashboard">Back to My Tickets</router-link>
-    </div>
+  <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+    <div v-if="loading" class="text-center text-gray-500 py-10">Loading ticket details...</div>
+    <div v-else-if="ticket" class="space-y-6">
+      
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">{{ ticket.title }}</h1>
+          <p class="text-sm text-gray-500">Ticket #{{ ticket.id }}</p>
+        </div>
+        <router-link 
+          v-if="authStore.user?.role === 'staff' || authStore.user?.role === 'admin'" 
+          to="/staff/dashboard" 
+          class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 mt-2 sm:mt-0"
+        >
+          &larr; Back to Staff List
+        </router-link>
+        <router-link 
+          v-else 
+          to="/dashboard" 
+          class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 mt-2 sm:mt-0"
+        >
+          &larr; Back to My Tickets
+        </router-link>
+      </div>
 
-    <div class="details-grid">
-      <div><strong>Creator:</strong> {{ ticket.creator_name }}</div>
-      <div><strong>Created At:</strong> {{ new Date(ticket.created_at).toLocaleString() }}</div>
-      <div><strong>Priority:</strong> {{ ticket.priority }}</div>
-      <div><strong>Status:</strong> <span :class="`status-${ticket.status.toLowerCase()}`">{{ ticket.status }}</span></div>
-      <div><strong>Assigned to:</strong> {{ ticket.assignee_name || 'Unassigned' }}</div>
-    </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold mb-4 border-b pb-2">Ticket Details</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div><strong>Creator:</strong><br>{{ ticket.creator_name }}</div>
+              <div><strong>Created:</strong><br>{{ new Date(ticket.created_at).toLocaleString() }}</div>
+              <div><strong>Priority:</strong><br><span class="font-medium" :class="priorityClass(ticket.priority)">{{ ticket.priority }}</span></div>
+              <div><strong>Status:</strong><br><span class="text-xs font-semibold px-2.5 py-1 rounded-full" :class="statusClass(ticket.status)">{{ ticket.status }}</span></div>
+              <div class="sm:col-span-2"><strong>Assigned to:</strong><br>{{ ticket.assignee_name || 'Unassigned' }}</div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold mb-2">Description</h3>
+            <p class="text-gray-700 whitespace-pre-wrap">{{ ticket.description }}</p>
+          </div>
+        </div>
 
-    <div class="description-box">
-      <h3>Description</h3>
-      <p>{{ ticket.description }}</p>
-    </div>
-
-    <div class="action-panel" v-if="authStore.user?.role === 'staff' || authStore.user?.role === 'admin'">
-      <h3>Actions</h3>
-      <div v-if="ticket.status === 'New'">
-        <select v-model="selectedAssignee">
-          <option :value="null" disabled>Select a staff member to assign</option>
-          <option v-for="staff in staffList" :key="staff.id" :value="staff.id">
-            {{ staff.name }}
-          </option>
-        </select>
-        <button @click="assignTicket" :disabled="!selectedAssignee">Assign</button>
-      </div>
-      <div v-if="['Assigned', 'In Progress'].includes(ticket.status)">
-        <button @click="resolveTicket">Mark as Resolved</button>
-      </div>
-      <div v-if="ticket.status === 'Resolved'">
-        <button @click="closeTicket">Close Ticket</button>
-      </div>
-      <div v-if="ticket.status === 'Closed'">
-        <p>This ticket is closed.</p>
-      </div>
-    </div>
-    
-    <div class="comment-section">
-      <h3>Comments</h3>
-      <div class="comment-list">
-        <div v-if="!ticket.comments || ticket.comments.length === 0">No comments yet.</div>
-        <div v-else v-for="comment in ticket.comments" :key="comment.id" class="comment-item" :class="`role-${comment.author_role}`">
-          <p class="comment-author"><strong>{{ comment.author_name }}</strong> ({{ comment.author_role }}) says:</p>
-          <p class="comment-text">{{ comment.comment_text }}</p>
-          <small class="comment-date">{{ new Date(comment.created_at).toLocaleString() }}</small>
+        <div class="lg:col-span-1" v-if="authStore.user?.role === 'staff' || authStore.user?.role === 'admin'">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold mb-4">Actions</h3>
+            <div v-if="ticket.status === 'New'" class="space-y-2">
+              <label for="assignee" class="text-sm font-medium">Assign to:</label>
+              <select id="assignee" v-model="selectedAssignee" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option :value="null" disabled>Select a staff member</option>
+                <option v-for="staff in staffList" :key="staff.id" :value="staff.id">{{ staff.name }}</option>
+              </select>
+              <button @click="assignTicket" :disabled="!selectedAssignee" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300">Assign</button>
+            </div>
+            <div v-if="['Assigned', 'In Progress'].includes(ticket.status)">
+              <button @click="resolveTicket" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">Mark as Resolved</button>
+            </div>
+            <div v-if="ticket.status === 'Resolved'">
+              <button @click="closeTicket" class="w-full bg-gray-700 text-white py-2 rounded-md hover:bg-gray-800">Close Ticket</button>
+            </div>
+            <div v-if="ticket.status === 'Closed'">
+              <p class="text-sm text-gray-500 text-center">This ticket is closed.</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div v-if="ticket.status !== 'Closed'" class="comment-form">
-        <textarea v-model="newCommentText" placeholder="Write a comment..." rows="4"></textarea>
-        <button @click="submitComment" :disabled="!newCommentText.trim()">Submit Comment</button>
+      
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4">Conversation</h3>
+        <div class="space-y-4 mb-6">
+          <div v-if="!ticket.comments || ticket.comments.length === 0" class="text-sm text-gray-500">No comments yet.</div>
+          <div v-else v-for="comment in ticket.comments" :key="comment.id" class="flex gap-3">
+            <div class="flex-shrink-0">
+               <div class="h-10 w-10 rounded-full flex items-center justify-center text-white" :class="comment.author_role === 'user' ? 'bg-gray-400' : 'bg-blue-500'">{{ comment.author_name.charAt(0).toUpperCase() }}</div>
+            </div>
+            <div class="w-full bg-gray-50 rounded-lg px-4 py-2">
+              <p class="font-semibold text-sm">{{ comment.author_name }} <span class="text-xs text-gray-500 font-light">{{ new Date(comment.created_at).toLocaleString() }}</span></p>
+              <p class="text-gray-700 text-sm whitespace-pre-wrap">{{ comment.comment_text }}</p>
+            </div>
+          </div>
+        </div>
+        <div v-if="ticket.status !== 'Closed'" class="border-t pt-4">
+          <textarea v-model="newCommentText" placeholder="Write a comment..." rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <div class="flex justify-end mt-2">
+            <button @click="submitComment" :disabled="!newCommentText.trim()" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-300">Submit Comment</button>
+          </div>
+        </div>
       </div>
     </div>
-
-  </div> <div v-else>Ticket not found.</div>
+    <div v-else class="text-center text-gray-500 py-10">Ticket not found.</div>
+  </div>
 </template>
 
 <script setup>
+// Script ไม่มีการเปลี่ยนแปลง
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient from '../api/axios';
@@ -73,7 +105,6 @@ const ticket = ref(null);
 const loading = ref(true);
 const ticketId = route.params.id;
 const authStore = useAuthStore();
-
 const staffList = ref([]);
 const selectedAssignee = ref(null);
 const newCommentText = ref('');
@@ -94,7 +125,6 @@ const fetchData = async () => {
     loading.value = false;
   }
 };
-
 onMounted(fetchData);
 
 const assignTicket = async () => {
@@ -107,7 +137,6 @@ const assignTicket = async () => {
     alert('Failed to assign ticket.');
   }
 };
-
 const resolveTicket = async () => {
   try {
     await apiClient.post(`/tickets/${ticketId}/resolve`);
@@ -117,7 +146,6 @@ const resolveTicket = async () => {
     alert('Failed to resolve ticket.');
   }
 };
-
 const closeTicket = async () => {
   try {
     await apiClient.post(`/tickets/${ticketId}/close`);
@@ -127,7 +155,6 @@ const closeTicket = async () => {
     alert('Failed to close ticket.');
   }
 };
-
 const submitComment = async () => {
   if (!newCommentText.value.trim()) return;
   try {
@@ -140,27 +167,19 @@ const submitComment = async () => {
     alert('Failed to submit comment.');
   }
 };
-</script>
 
-<style scoped>
-.ticket-detail-container { max-width: 800px; margin: 20px auto; padding: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; }
-.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
-.description-box { padding: 15px; border: 1px solid #eee; margin-top: 20px; white-space: pre-wrap; }
-.action-panel { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; }
-.action-panel select { margin-right: 10px; }
-.status-new { color: blue; font-weight: bold; }
-.status-assigned { color: purple; font-weight: bold; }
-.status-resolved { color: green; font-weight: bold; }
-.status-closed { color: grey; }
-.comment-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; }
-.comment-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
-.comment-item { padding: 10px; border-radius: 5px; border: 1px solid #e0e0e0; }
-.comment-item.role-staff { background-color: #e7f3ff; }
-.comment-item.role-admin { background-color: #fffbe7; }
-.comment-author { margin: 0; font-size: 0.9em; }
-.comment-text { margin: 5px 0; white-space: pre-wrap; }
-.comment-date { font-size: 0.8em; color: #888; }
-.comment-form textarea { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
-.comment-form button { float: right; }
-</style>
+const statusClass = (status) => {
+  const s = status ? status.toLowerCase() : '';
+  if (s === 'new') return 'bg-blue-100 text-blue-800';
+  if (s === 'assigned' || s.includes('progress')) return 'bg-yellow-100 text-yellow-800';
+  if (s === 'resolved') return 'bg-green-100 text-green-800';
+  if (s === 'closed') return 'bg-gray-200 text-gray-800';
+  return 'bg-gray-100 text-gray-800';
+};
+const priorityClass = (priority) => {
+    const p = priority ? priority.toLowerCase() : '';
+    if (p === 'high') return 'text-red-600';
+    if (p === 'medium') return 'text-orange-500';
+    return 'text-green-600';
+};
+</script>
